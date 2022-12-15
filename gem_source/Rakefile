@@ -1,0 +1,7 @@
+require 'bundler/gem_tasks'
+
+desc 'git create tag version and push'
+task :gtp do
+  ENV['gem_push'] = 'no'
+  Rake::Task['release:source_control_push'].invoke
+end

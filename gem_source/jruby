@@ -1,0 +1,41 @@
+#!/bin/bash
+
+dir=$(dirname "$BASH_SOURCE")
+
+if [[ -r ./set_env_vars.sh ]]; then
+  . ./set_env_vars.sh
+elif [[ -r "$dir/set_env_vars.sh" ]]; then
+  . "$dir/set_env_vars.sh"
+else
+  echo >&2 "No script called set_env_vars.sh found in directories $PWD or $dir. Aborting."
+  exit 1
+fi
+if [[ -z ${jruby_version} ]]; then
+  echo "You must specify the jruby_version in the project_parameters.sh file"
+  exit 1
+fi
+
+home=${home:-$HOME}
+
+export GEM_HOME="$home/.gem/jruby/$ruby_abi_version"
+export GEM_PATH="$GEM_HOME"
+export PATH="$home/.gem/bin:$home/.gem/jruby/$ruby_abi_version/bin:.:$dir:$PATH"
+
+pushd $home >/dev/null
+if [[ ! -d jrubyjars ]]; then
+  git >/dev/null clone git@git.ibsa.vlan:ibsa/jrubyjars jrubyjars
+fi
+cd jrubyjars
+
+jruby_complete_jar="jruby-complete-$jruby_version.jar"
+
+if [[ ! -f "$jruby_complete_jar" ]]; then git >/dev/null pull; fi
+if [[ ! -f "$jruby_complete_jar" ]]; then
+  echo >&2 "Could not find jruby jar: ${jruby_complete_jar} in git repository. Aborting"
+  exit 1
+fi
+#echo >&2 "Using $jruby_complete_jar, running $*"
+classpath="$PWD/$jruby_complete_jar"
+popd >/dev/null
+
+java $jvm_opts -cp "$classpath" org.jruby.Main "-I." "$@"

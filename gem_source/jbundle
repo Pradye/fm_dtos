@@ -1,0 +1,23 @@
+#!/bin/bash
+dir=$(dirname "$BASH_SOURCE")
+
+if [[ -r "$dir/project_parameters.sh" ]]; then
+  . "$dir/project_parameters.sh"
+fi
+
+if [[ -r ./project_parameters.sh ]]; then
+  . ./project_parameters.sh
+fi
+
+export PATH="$HOME/.gem/bin:$HOME/.gem/jruby/$ruby_abi_version/bin:.:$dir:/usr/local/bin:/usr/bin:/bin"
+
+function run_bundler() {
+  bash "$dir/jruby" -S bundle "$@"
+}
+
+# We used to have some code here to specify the version of bundler to use, and to install that version if were not already available, but that has been removed as unnecessary overhead since bundler has stabilised, and since it broke on jruby 1.7.22. It may need to re-instantiated if we find compatibility problems in the future.
+
+if [[ ! -d "$HOME/.gem/jruby/$ruby_abi_version/gems/bundler-$bundler_version" ]]; then
+  bash "$dir/jruby" -S gem install bundler -v $bundler_version || exit 1
+fi
+run_bundler "$@"
